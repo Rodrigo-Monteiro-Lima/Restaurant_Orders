@@ -2,7 +2,6 @@ from typing import Dict, List
 
 from services.inventory_control import InventoryMapping
 from services.menu_data import MenuData
-from models.ingredient import Restriction
 
 DATA_PATH = "data/menu_base_data.csv"
 INVENTORY_PATH = "data/inventory_base_data.csv"
@@ -12,6 +11,10 @@ class MenuBuilder:
     def __init__(self, data_path=DATA_PATH, inventory_path=INVENTORY_PATH):
         self.menu_data = MenuData(data_path)
         self.inventory = InventoryMapping(inventory_path)
+
+    def test(self):
+        for dish in self.menu_data.dishes:
+            self.inventory.check_recipe_availability(dish.recipe)
 
     def make_order(self, dish_name: str) -> None:
         try:
@@ -35,13 +38,9 @@ class MenuBuilder:
                 "ingredients": dish.get_ingredients(),
                 "restrictions": dish.get_restrictions(),
             }
-            if restriction not in dish_dict["restrictions"]:
+            if restriction not in dish_dict[
+                "restrictions"
+            ] and self.inventory.check_recipe_availability(dish.recipe):
                 menu.append(dish_dict)
+                self.inventory.consume_recipe(dish.recipe)
         return menu
-
-
-if __name__ == "__main__":
-    menu = MenuBuilder(DATA_PATH, INVENTORY_PATH).get_main_menu(
-        Restriction.ANIMAL_MEAT
-    )
-    print(menu, len(menu))
